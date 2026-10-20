@@ -7,6 +7,7 @@ This project is a beginner-friendly Python task management agent. It keeps tasks
 - Add a task
 - List all tasks
 - Mark a task as complete
+- Delete a task by ID
 - Store tasks in `tasks.json`
 - Handle invalid inputs and missing task IDs without crashing
 - Uses only Python's standard library
@@ -26,6 +27,7 @@ python agent.py
 - `add Buy groceries` - add a new task
 - `list` - view all tasks
 - `complete 1` - mark task 1 as done
+- `delete 1` - delete task 1
 - `help` - display available commands
 - `quit` - exit the program
 
