@@ -44,6 +44,8 @@ Current tasks:
 - #1: Buy groceries [open]
 agent> complete 1
 Completed task #1: Buy groceries
+agent> delete 1
+Deleted task #1: Buy groceries
 agent> quit
 Goodbye!
 ```
