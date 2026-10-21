@@ -26,7 +26,18 @@ def save_tasks(tasks):
 
 
 def add_task(description):
-    """Create and save a task, returning the new task record."""
+    """Create a task, assign it an ID, and save it.
+
+    Args:
+        description: Text describing the task.
+
+    Returns:
+        The new task record with its ID, description, and incomplete status.
+
+    Side effects:
+        Reads the saved tasks and writes the updated task list to the tasks
+        file.
+    """
     tasks = load_tasks()
     next_id = max((task["id"] for task in tasks), default=0) + 1
     task = {"id": next_id, "description": description, "completed": False}
