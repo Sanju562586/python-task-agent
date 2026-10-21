@@ -11,7 +11,10 @@ def load_tasks():
         return []
 
     with TASKS_FILE.open("r", encoding="utf-8") as file:
-        tasks = json.load(file)
+        try:
+            tasks = json.load(file)
+        except json.JSONDecodeError as error:
+            raise ValueError(f"Invalid JSON in tasks file: {TASKS_FILE}") from error
 
     if not isinstance(tasks, list):
         raise ValueError("The tasks file must contain a JSON list.")
@@ -39,7 +42,18 @@ def add_task(description):
         file.
     """
     tasks = load_tasks()
-    next_id = max((task["id"] for task in tasks), default=0) + 1
+    task_ids = []
+    for task in tasks:
+        task_id = task.get("id") if isinstance(task, dict) else None
+        if (
+            isinstance(task_id, bool)
+            or not isinstance(task_id, int)
+            or task_id < 1
+        ):
+            raise ValueError("Every saved task must have a positive integer ID.")
+        task_ids.append(task_id)
+
+    next_id = max(task_ids, default=0) + 1
     task = {"id": next_id, "description": description, "completed": False}
     tasks.append(task)
     save_tasks(tasks)
@@ -51,26 +65,49 @@ def list_tasks():
     return load_tasks()
 
 
+def _find_task_index(tasks, task_id):
+    """Return the index of a task with the given ID, or None if not found."""
+    return next(
+        (index for index, task in enumerate(tasks) if task["id"] == task_id),
+        None,
+    )
+
+
 def complete_task(task_id):
     """Mark a matching task complete, or return None if it does not exist."""
     tasks = load_tasks()
-    for task in tasks:
-        if task["id"] == task_id:
-            task["completed"] = True
-            save_tasks(tasks)
-            return task
-    return None
+    task_index = _find_task_index(tasks, task_id)
+    if task_index is None:
+        return None
+
+    task = tasks[task_index]
+    task["completed"] = True
+    save_tasks(tasks)
+    return task
 
 
 def delete_task(task_id):
     """Remove a matching task, or return None if it does not exist."""
     tasks = load_tasks()
-    for index, task in enumerate(tasks):
-        if task["id"] == task_id:
-            deleted_task = tasks.pop(index)
-            save_tasks(tasks)
-            return deleted_task
-    return None
+    task_index = _find_task_index(tasks, task_id)
+    if task_index is None:
+        return None
+
+    deleted_task = tasks.pop(task_index)
+    save_tasks(tasks)
+    return deleted_task
+
+
+def _parse_task_id(argument, command):
+    """Parse a positive task ID, printing the command's error message if invalid."""
+    try:
+        task_id = int(argument)
+        if task_id < 1:
+            raise ValueError
+    except ValueError:
+        print(f"Please provide a valid task ID, for example: {command} 1")
+        return None
+    return task_id
 
 
 def print_help():
@@ -108,12 +145,8 @@ def handle_command(command_line):
                 status = "done" if task["completed"] else "open"
                 print(f"- #{task['id']}: {task['description']} [{status}]")
     elif command == "complete":
-        try:
-            task_id = int(argument)
-            if task_id < 1:
-                raise ValueError
-        except ValueError:
-            print("Please provide a valid task ID, for example: complete 1")
+        task_id = _parse_task_id(argument, command)
+        if task_id is None:
             return True
 
         task = complete_task(task_id)
@@ -122,12 +155,8 @@ def handle_command(command_line):
         else:
             print(f"Completed task #{task['id']}: {task['description']}")
     elif command == "delete":
-        try:
-            task_id = int(argument)
-            if task_id < 1:
-                raise ValueError
-        except ValueError:
-            print("Please provide a valid task ID, for example: delete 1")
+        task_id = _parse_task_id(argument, command)
+        if task_id is None:
             return True
 
         task = delete_task(task_id)
